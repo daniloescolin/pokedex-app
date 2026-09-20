@@ -4,12 +4,12 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin, map, switchMap, tap } from 'rxjs';
 import { EvolutionNode, PokemonListItem, PokemonService } from '../../services/pokemon.service';
 import { PokemonIdPipe } from '../../pipes/pokemon-id.pipe';
-import { PokemonTypeDirective } from '../../directives/pokemon-type.directive';
+import { PokemonType } from '../pokemon-type/pokemon-type';
 
 @Component({
   selector: 'app-pokemon-detail',
   standalone: true,
-  imports: [RouterLink, PokemonIdPipe, PokemonTypeDirective],
+  imports: [RouterLink, PokemonIdPipe, PokemonType],
   template: `
     <div class="detail-container">
       <div class="top-nav">
@@ -50,14 +50,40 @@ import { PokemonTypeDirective } from '../../directives/pokemon-type.directive';
             </button>
           </div>
 
-          <!-- Types -->
-          <div class="types-row">
-            @for (t of poke.types; track t.type.name) {
-              <span class="type-badge" [appPokemonType]="t.type.name">
-                {{ t.type.name }}
-              </span>
-            }
-          </div>
+         <!-- Types -->
+<div class="types-row">
+  @for (t of poke.types; track t.type.name) {
+    <app-pokemon-type
+      [type]="t.type.name">
+    </app-pokemon-type>
+  }
+</div>
+
+<!-- Media: Main Artwork + Sprite Gallery -->
+<div class="media-section">
+  <div class="main-artwork">
+    <img 
+      [src]="poke.sprites?.other?.['official-artwork']?.front_default || poke.sprites?.front_default" 
+      [alt]="poke.name"
+    />
+  </div>
+
+  <div class="sprites-gallery">
+    @if (poke.sprites?.front_default) {
+      <div class="sprite-item">
+        <img [src]="poke.sprites.front_default" alt="Normal front" />
+        <span>Default</span>
+      </div>
+    }
+
+    @if (poke.sprites?.front_shiny) {
+      <div class="sprite-item">
+        <img [src]="poke.sprites.front_shiny" alt="Shiny front" />
+        <span>✨ Shiny</span>
+      </div>
+    }
+  </div>
+</div>
 
           <!-- Media: Main Artwork + Sprite Gallery -->
           <div class="media-section">
