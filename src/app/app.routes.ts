@@ -1,16 +1,25 @@
 import { Routes } from '@angular/router';
-import { PokemonList } from './components/pokemon-list/pokemon-list';
-import { PokemonDetail } from './components/pokemon-detail/pokemon-detail';
-import { Dashboard } from './components/dashboard/dashboard';
-import { authGuard } from './guards/auth-guard';
+import { Workshop } from './components/workshop/workshop';
 
 export const routes: Routes = [
-  { path: '', component: PokemonList },
-  { path: 'pokemon/:name', component: PokemonDetail },
-  { 
-    path: 'dashboard', 
-    component: Dashboard, 
-    canActivate: [authGuard] // Apply the guard here
+  {
+    path: '',
+    loadComponent: () => import('./components/pokemon-list/pokemon-list').then(m => m.PokemonList)
   },
-  { path: '**', redirectTo: '' } // Wildcard route for 404s
+  {
+    path: 'pokemon/:id',
+    loadComponent: () => import('./components/pokemon-detail/pokemon-detail').then(m => m.PokemonDetail)
+  },
+  {
+    path: 'dashboard',
+    loadComponent: () => import('./components/dashboard/dashboard').then(m => m.Dashboard)
+  },
+  {
+    path: 'workshop',
+    component: Workshop
+  },
+  {
+    path: '**',
+    redirectTo: ''
+  }
 ];
