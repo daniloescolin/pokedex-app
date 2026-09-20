@@ -4,10 +4,11 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class WorkshopService {
-  getWorkshopDetails() {
+  getWorkshopData() {
     return {
-      title: 'Taller de Angular',
-      topics: ['Componentes', 'Servicios', 'Rutas']
+      title: 'Módulo de Entrenamiento PokéDex',
+      description: 'Servicio y componente vinculados correctamente.',
+      status: 'Activo'
     };
   }
 }

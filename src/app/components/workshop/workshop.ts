@@ -9,5 +9,5 @@ import { WorkshopService } from '../../services/workshop';
 })
 export class Workshop {
   private workshopService = inject(WorkshopService);
-  data = this.workshopService.getWorkshopDetails();
+  info = this.workshopService.getWorkshopData();
 }
