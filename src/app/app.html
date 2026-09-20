@@ -1,0 +1,47 @@
+<header class="app-header">
+  <div class="header-container">
+    <a routerLink="/" class="logo">
+      <div class="pokeball-icon">
+        <div class="pokeball-top"></div>
+        <div class="pokeball-center"></div>
+        <div class="pokeball-bottom"></div>
+      </div>
+      <div class="logo-text">
+        <span class="logo-title">PokéDex</span>
+        <span class="logo-subtitle">Workshop Edition</span>
+      </div>
+    </a>
+
+    <nav class="nav-links">
+      <a 
+        routerLink="/" 
+        routerLinkActive="active" 
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-link"
+      >
+        <span class="nav-icon">📖</span>
+        <span class="nav-text">All Pokémon</span>
+      </a>
+
+      <a 
+        routerLink="/dashboard" 
+        routerLinkActive="active" 
+        class="nav-link dashboard-link"
+      >
+        <span class="nav-icon">⚡</span>
+        <span class="nav-text">Trainer Dashboard</span>
+        @if (favoritesService.favoriteCount() > 0) {
+          <span class="badge">{{ favoritesService.favoriteCount() }}</span>
+        }
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main class="main-container">
+  <router-outlet></router-outlet>
+</main>
+
+<footer class="app-footer">
+  <p>Angular PokéDex Workshop • Powered by <strong>PokeAPI</strong> & <strong>Angular Signals</strong></p>
+</footer>

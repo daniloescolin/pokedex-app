@@ -1,0 +1,29 @@
+.menu-button { display: none; border: 0; background: transparent; font-size: 1.5rem; cursor: pointer; }
+.favorites-trigger { border: 1px solid #d9dee8; background: #253045; color: #fff; padding: 9px 13px; font-weight: 700; cursor: pointer; }
+.favorites-trigger span { display: inline-grid; place-items: center; min-width: 21px; height: 21px; margin-left: 5px; border-radius: 50%; color: #253045; background: #f6c344; }
+.drawer-backdrop { position: fixed; inset: 0; z-index: 199; width: 100%; border: 0; background: rgba(15, 23, 42, .45); }
+.favorites-drawer { position: fixed; inset: 0 0 0 auto; z-index: 200; width: min(390px, 92vw); padding: 24px; background: #fff; box-shadow: -12px 0 35px rgba(15, 23, 42, .18); overflow: auto; }
+.drawer-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 18px; border-bottom: 1px solid #e2e8f0; }
+.drawer-header h2 { font-size: 1.6rem; }
+.eyebrow { color: #b82500; text-transform: uppercase; font-size: .72rem; font-weight: 800; }
+.icon-button { border: 0; background: #f1f5f9; width: 36px; height: 36px; font-size: 1.4rem; cursor: pointer; }
+.favorite-list { margin: 18px 0; }
+.favorite-row { display: flex; align-items: center; border-bottom: 1px solid #eef2f6; }
+.favorite-row a { display: flex; flex: 1; align-items: center; gap: 12px; text-transform: capitalize; font-weight: 700; }
+.favorite-row img { width: 64px; height: 64px; object-fit: contain; }
+.favorite-row > button { border: 0; background: transparent; color: #64748b; font-size: 1.25rem; cursor: pointer; }
+.drawer-empty { padding: 56px 20px; text-align: center; color: #64748b; }
+.drawer-empty span { display: block; font-size: 2.5rem; color: #d39d13; }
+.clear-favorites { width: 100%; border: 1px solid #dc2626; background: #fff; color: #b91c1c; padding: 11px; font-weight: 700; cursor: pointer; }
+.confirm-dialog { width: min(420px, calc(100vw - 32px)); border: 0; padding: 26px; box-shadow: 0 20px 60px rgba(15, 23, 42, .3); }
+.confirm-dialog::backdrop { background: rgba(15, 23, 42, .55); }
+.confirm-dialog p { margin: 8px 0 22px; color: #64748b; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.dialog-actions button { border: 1px solid #cbd5e1; background: #fff; padding: 9px 15px; font-weight: 700; cursor: pointer; }
+.dialog-actions .danger { border-color: #dc2626; background: #dc2626; color: #fff; }
+
+@media (max-width: 700px) {
+	.menu-button { display: block; }
+	.nav-links { display: none; position: absolute; top: 100%; left: 0; right: 0; padding: 12px 20px 18px; background: #fff; border-bottom: 1px solid #e2e8f0; box-shadow: 0 8px 16px rgba(15, 23, 42, .08); }
+	.nav-links.open { display: flex; align-items: stretch; flex-direction: column; }
+}

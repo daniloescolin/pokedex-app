@@ -1,0 +1,20 @@
+@if (isLoading()) {
+<p>Loading details...</p>
+} @else if (pokemon()) {
+<div>
+    <h2 style="text-transform: capitalize;">{{ pokemon().name }}</h2>
+
+    @if (pokemon().sprites?.front_default) {
+    <img [src]="pokemon().sprites.front_default" [alt]="pokemon().name" width="150" />
+    <img [src]="pokemon().sprites.back_default" [alt]="pokemon().name" width="150" />
+    }
+
+    <p><strong>Height:</strong> {{ pokemon().height }}</p>
+    <p><strong>Weight:</strong> {{ pokemon().weight }}</p>
+
+    <button routerLink="/">← Back to List</button>
+</div>
+} @else {
+<p>Pokémon details could not be loaded.</p>
+<button routerLink="/">← Back to List</button>
+}

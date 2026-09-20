@@ -1,0 +1,17 @@
+<h2>Pokedex Directory</h2>
+
+    @if (isLoading()) {
+      <p>Loading Pokémon...</p>
+    } @else if (pokemons().length === 0) {
+      <p>No Pokémon found or failed to load.</p>
+    } @else {
+      <ul>
+        @for (p of pokemons(); track p.name) {
+          <li>
+            <a [routerLink]="['/pokemon', p.name]" style="text-transform: capitalize;">
+              {{ p.name }}
+            </a>
+          </li>
+        }
+      </ul>
+    }
