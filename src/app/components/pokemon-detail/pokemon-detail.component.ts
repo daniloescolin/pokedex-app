@@ -2,11 +2,14 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PokemonService } from '../../services/pokemon.service';
 import { PokemonIdPipe } from '../../pipes/pokemon-id.pipe';
+import { Tipo } from '../../tipo/tipo';
+
+
 
 @Component({
   selector: 'app-pokemon-detail',
   standalone: true,
-  imports: [RouterLink, PokemonIdPipe],
+  imports: [RouterLink, PokemonIdPipe, Tipo],
   template: `
     <div class="detail-container">
       <div class="top-nav">
@@ -23,7 +26,6 @@ import { PokemonIdPipe } from '../../pipes/pokemon-id.pipe';
         <div class="detail-card">
           <!-- Header info -->
           <div class="header-section">
-            <span class="poke-id">{{ poke.id | pokemonId }}</span>
             <h1 class="poke-name">{{ poke.name }}</h1>
 
             <!-- Audio Cry Player -->
@@ -45,15 +47,13 @@ import { PokemonIdPipe } from '../../pipes/pokemon-id.pipe';
                 <span>🔊 Play Sound</span>
               }
             </button>
-          </div>
 
-          <!-- Types -->
-          <div class="types-row">
-            @for (t of poke.types; track t.type.name) {
-              <span class="type-badge type-{{ t.type.name }}">
-                {{ t.type.name }}
-              </span>
-            }
+            <!-- Types -->
+            <div class="types-row">
+              @for (t of poke.types; track t.type.name) {
+                <app-tipo [type]="t.type.name" />
+              }
+            </div>
           </div>
 
           <!-- Media: Main Artwork + Sprite Gallery -->

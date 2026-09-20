@@ -63,6 +63,22 @@ export class PokemonService {
       );
   }
 
+  getPokemonsByType(type: string): Observable<PokemonListItem[]> {
+    return this.http.get<any>(`${this.apiUrl}/type/${type}`).pipe(
+      map((response) =>
+        response.pokemon.map((entry: { pokemon: { name: string; url: string } }) => {
+          const id = this.extractIdFromUrl(entry.pokemon.url);
+          return {
+            name: entry.pokemon.name,
+            url: entry.pokemon.url,
+            id,
+            image: this.getArtworkUrl(id)
+          };
+        })
+      )
+  );
+  }
+
   /**
    * Fetches complete details (types, stats, cries, sprites) for a Pokémon by name or ID
    */

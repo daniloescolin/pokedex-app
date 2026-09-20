@@ -7,10 +7,12 @@ import { authGuard } from './guards/auth-guard';
 export const routes: Routes = [
   { path: '', component: PokemonList },
   { path: 'pokemon/:name', component: PokemonDetail },
+  { path: 'type/:type', component: PokemonList },
   { 
     path: 'dashboard', 
     component: Dashboard, 
-    canActivate: [authGuard] // Apply the guard here
+    canActivate: [authGuard] 
   },
   { path: '**', redirectTo: '' } // Wildcard route for 404s
+    
 ];
