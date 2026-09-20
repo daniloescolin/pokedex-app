@@ -15,10 +15,12 @@ import { PokemonIdPipe } from '../../pipes/pokemon-id.pipe';
           type="button" 
           class="favorite-btn" 
           (click)="onFavoriteClick($event)"
-          title="Mark as Favorite"
-          aria-label="Mark as favorite"
+          [class.selected]="isFavorite()"
+          [title]="isFavorite() ? 'Remove from favorites' : 'Add to favorites'"
+          [attr.aria-label]="isFavorite() ? 'Remove from favorites' : 'Add to favorites'"
+          [attr.aria-pressed]="isFavorite()"
         >
-          ⭐
+          {{ isFavorite() ? '★' : '☆' }}
         </button>
       </div>
 
@@ -92,6 +94,8 @@ import { PokemonIdPipe } from '../../pipes/pokemon-id.pipe';
       transform: scale(1.15);
     }
 
+    .favorite-btn.selected { color: #a16207; background: #fef3c7; border-color: #f6c344; }
+
     .card-body {
       text-decoration: none;
       color: inherit;
@@ -158,6 +162,7 @@ import { PokemonIdPipe } from '../../pipes/pokemon-id.pipe';
 export class PokemonCardComponent {
   // Modern Signal Input (Angular 17+)
   pokemon = input.required<PokemonListItem>();
+  isFavorite = input(false);
 
   // Modern Signal Output (Angular 17+)
   favorite = output<PokemonListItem>();

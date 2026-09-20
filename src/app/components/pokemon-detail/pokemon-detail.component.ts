@@ -1,12 +1,15 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { PokemonService } from '../../services/pokemon.service';
+import { forkJoin, map, switchMap, tap } from 'rxjs';
+import { EvolutionNode, PokemonListItem, PokemonService } from '../../services/pokemon.service';
 import { PokemonIdPipe } from '../../pipes/pokemon-id.pipe';
+import { PokemonType } from '../pokemon-type/pokemon-type';
 
 @Component({
   selector: 'app-pokemon-detail',
   standalone: true,
-  imports: [RouterLink, PokemonIdPipe],
+  imports: [RouterLink, PokemonIdPipe, PokemonType],
   template: `
     <div class="detail-container">
       <div class="top-nav">
@@ -47,14 +50,40 @@ import { PokemonIdPipe } from '../../pipes/pokemon-id.pipe';
             </button>
           </div>
 
-          <!-- Types -->
-          <div class="types-row">
-            @for (t of poke.types; track t.type.name) {
-              <span class="type-badge type-{{ t.type.name }}">
-                {{ t.type.name }}
-              </span>
-            }
-          </div>
+         <!-- Types -->
+<div class="types-row">
+  @for (t of poke.types; track t.type.name) {
+    <app-pokemon-type
+      [type]="t.type.name">
+    </app-pokemon-type>
+  }
+</div>
+
+<!-- Media: Main Artwork + Sprite Gallery -->
+<div class="media-section">
+  <div class="main-artwork">
+    <img 
+      [src]="poke.sprites?.other?.['official-artwork']?.front_default || poke.sprites?.front_default" 
+      [alt]="poke.name"
+    />
+  </div>
+
+  <div class="sprites-gallery">
+    @if (poke.sprites?.front_default) {
+      <div class="sprite-item">
+        <img [src]="poke.sprites.front_default" alt="Normal front" />
+        <span>Default</span>
+      </div>
+    }
+
+    @if (poke.sprites?.front_shiny) {
+      <div class="sprite-item">
+        <img [src]="poke.sprites.front_shiny" alt="Shiny front" />
+        <span>✨ Shiny</span>
+      </div>
+    }
+  </div>
+</div>
 
           <!-- Media: Main Artwork + Sprite Gallery -->
           <div class="media-section">
@@ -96,6 +125,21 @@ import { PokemonIdPipe } from '../../pipes/pokemon-id.pipe';
               <span class="spec-value">{{ poke.base_experience || 'N/A' }}</span>
             </div>
           </div>
+
+          <section class="evolution-section">
+            <h2>Evolution chain</h2>
+            <div class="evolution-chain">
+              @for (evolution of evolutions(); track evolution.id; let last = $last) {
+                <a [routerLink]="['/pokemon', evolution.name]" class="evolution-item" [class.current]="evolution.name === poke.name">
+                  <img [src]="evolution.image" [alt]="evolution.name" />
+                  <span>{{ evolution.name }}</span>
+                </a>
+                @if (!last) { <span class="evolution-arrow" aria-hidden="true">→</span> }
+              } @empty {
+                <p class="muted">No evolution data is available.</p>
+              }
+            </div>
+          </section>
 
           <!-- Base Stats Section -->
           <div class="stats-section">
@@ -323,6 +367,15 @@ import { PokemonIdPipe } from '../../pipes/pokemon-id.pipe';
       margin-bottom: 16px;
     }
 
+    .evolution-section { margin-bottom: 32px; }
+    .evolution-section h2 { font-size: 1.3rem; margin-bottom: 16px; }
+    .evolution-chain { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+    .evolution-item { display: flex; flex-direction: column; align-items: center; min-width: 110px; padding: 10px; border: 1px solid #e2e8f0; background: #f8fafc; text-transform: capitalize; font-weight: 700; }
+    .evolution-item.current { border-color: #e3350d; background: #fff1ed; }
+    .evolution-item img { width: 82px; height: 82px; object-fit: contain; }
+    .evolution-arrow { color: #94a3b8; font-size: 1.4rem; }
+    .muted { color: #64748b; }
+
     .stats-list {
       display: flex;
       flex-direction: column;
@@ -387,20 +440,34 @@ import { PokemonIdPipe } from '../../pipes/pokemon-id.pipe';
 export class PokemonDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private pokemonService = inject(PokemonService);
+  private destroyRef = inject(DestroyRef);
 
   // State Signals
   pokemon = signal<any>(null);
   isLoading = signal<boolean>(true);
   isPlayingSound = signal<boolean>(false);
+  evolutions = signal<PokemonListItem[]>([]);
 
   private currentAudio: HTMLAudioElement | null = null;
 
   ngOnInit(): void {
-    const name = this.route.snapshot.paramMap.get('name');
-    if (name) {
-      this.pokemonService.getPokemonDetail(name).subscribe({
-        next: (data) => {
-          this.pokemon.set(data);
+    this.route.paramMap.pipe(
+      map((params) => params.get('name')),
+      tap(() => {
+        this.isLoading.set(true);
+        this.evolutions.set([]);
+      }),
+      switchMap((name) => forkJoin({
+        pokemon: this.pokemonService.getPokemonDetail(name ?? ''),
+        evolution: this.pokemonService.getPokemonSpecies(name ?? '').pipe(
+          switchMap((species) => this.pokemonService.getEvolutionChain(species.evolution_chain.url))
+        )
+      })),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+        next: ({ pokemon, evolution }) => {
+          this.pokemon.set(pokemon);
+          this.evolutions.set(this.flattenEvolutionChain(evolution.chain));
           this.isLoading.set(false);
         },
         error: (err) => {
@@ -408,9 +475,14 @@ export class PokemonDetailComponent implements OnInit {
           this.isLoading.set(false);
         }
       });
-    } else {
-      this.isLoading.set(false);
-    }
+  }
+
+  private flattenEvolutionChain(node: EvolutionNode): PokemonListItem[] {
+    const id = this.pokemonService.extractIdFromUrl(node.species.url);
+    return [
+      { name: node.species.name, url: node.species.url, id, image: this.pokemonService.getArtworkUrl(id) },
+      ...node.evolves_to.flatMap((next) => this.flattenEvolutionChain(next))
+    ];
   }
 
   /**

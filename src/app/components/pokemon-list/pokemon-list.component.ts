@@ -1,12 +1,16 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { PokemonService, PokemonListItem } from '../../services/pokemon.service';
 import { PokemonCardComponent } from '../pokemon-card/pokemon-card.component';
+import { FavoritesService } from '../../services/favorites.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-pokemon-list',
   standalone: true,
-  imports: [FormsModule, PokemonCardComponent],
+  imports: [ReactiveFormsModule, PokemonCardComponent],
   template: `
     <section class="pokedex-list-view">
       <!-- Search and Controls Bar -->
@@ -15,27 +19,21 @@ import { PokemonCardComponent } from '../pokemon-card/pokemon-card.component';
           <span class="search-icon">🔍</span>
           <input 
             type="text" 
-            placeholder="Filter Pokémon by name..." 
-            [(ngModel)]="searchTerm"
+            placeholder="Search every Pokémon..." 
+            [formControl]="searchControl"
             aria-label="Search Pokémon"
           />
           @if (searchTerm()) {
-            <button class="clear-btn" (click)="searchTerm.set('')">✕</button>
+            <button type="button" class="clear-btn" (click)="clearSearch()" aria-label="Clear search">✕</button>
           }
         </div>
 
         <div class="pagination-info">
-          <span>Page <strong>{{ currentPage() }}</strong></span>
+          <span><strong>{{ filteredPokemons().length }}</strong> results</span>
         </div>
       </div>
 
       <!-- Action feedback alert -->
-      @if (lastFavorited()) {
-        <div class="alert-banner">
-          ⭐ Added <strong>{{ lastFavorited() }}</strong> to your trainer list!
-        </div>
-      }
-
       <!-- Loading State -->
       @if (isLoading()) {
         <div class="loading-state">
@@ -44,18 +42,19 @@ import { PokemonCardComponent } from '../pokemon-card/pokemon-card.component';
         </div>
       } 
       <!-- Empty State -->
-      @else if (filteredPokemons().length === 0) {
+      @else if (visiblePokemons().length === 0) {
         <div class="empty-state">
-          <p>No Pokémon matching "<strong>{{ searchTerm() }}</strong>" found on this page.</p>
-          <button (click)="searchTerm.set('')" class="btn-primary">Clear Filter</button>
+          <p>No Pokémon matching "<strong>{{ searchTerm() }}</strong>" exists in the database.</p>
+          <button (click)="clearSearch()" class="btn-primary">Clear Search</button>
         </div>
       } 
       <!-- Grid of Pokemon Cards -->
       @else {
         <div class="pokemon-grid">
-          @for (pokemon of filteredPokemons(); track pokemon.id) {
+          @for (pokemon of visiblePokemons(); track pokemon.id) {
             <app-pokemon-card 
               [pokemon]="pokemon" 
+              [isFavorite]="favorites.isFavorite(pokemon.id)"
               (favorite)="handleFavorite($event)"
             />
           }
@@ -226,18 +225,17 @@ import { PokemonCardComponent } from '../pokemon-card/pokemon-card.component';
 })
 export class PokemonListComponent implements OnInit {
   private pokemonService = inject(PokemonService);
+  protected favorites = inject(FavoritesService);
+  private notifications = inject(NotificationService);
+  private destroyRef = inject(DestroyRef);
 
   // State Signals
   pokemons = signal<PokemonListItem[]>([]);
   isLoading = signal<boolean>(true);
   searchTerm = signal<string>('');
+  searchControl = new FormControl('', { nonNullable: true });
   currentPage = signal<number>(1);
   pageSize = signal<number>(20);
-  hasNextPage = signal<boolean>(true);
-  lastFavorited = signal<string | null>(null);
-
-  // Computed Signal: calculates the current offset reactively
-  offset = computed(() => (this.currentPage() - 1) * this.pageSize());
 
   // Computed Signal: real-time filtered list based on search term
   filteredPokemons = computed(() => {
@@ -248,16 +246,30 @@ export class PokemonListComponent implements OnInit {
     return this.pokemons().filter((p) => p.name.toLowerCase().includes(query));
   });
 
+  visiblePokemons = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize();
+    return this.filteredPokemons().slice(start, start + this.pageSize());
+  });
+
+  hasNextPage = computed(() => this.currentPage() * this.pageSize() < this.filteredPokemons().length);
+
   ngOnInit(): void {
     this.fetchPokemons();
+    this.searchControl.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe((value) => {
+      this.searchTerm.set(value);
+      this.currentPage.set(1);
+    });
   }
 
   fetchPokemons(): void {
     this.isLoading.set(true);
-    this.pokemonService.getPokemons(this.pageSize(), this.offset()).subscribe({
-      next: (response) => {
-        this.pokemons.set(response.results);
-        this.hasNextPage.set(!!response.next);
+    this.pokemonService.getAllPokemons().subscribe({
+      next: (pokemons) => {
+        this.pokemons.set(pokemons);
         this.isLoading.set(false);
       },
       error: (err) => {
@@ -284,9 +296,14 @@ export class PokemonListComponent implements OnInit {
   }
 
   handleFavorite(pokemon: PokemonListItem): void {
-    this.lastFavorited.set(pokemon.name);
-    setTimeout(() => {
-      this.lastFavorited.set(null);
-    }, 3000);
+    const added = this.favorites.toggle(pokemon);
+    this.notifications.show(
+      `${pokemon.name} ${added ? 'was added to' : 'was removed from'} favorites.`,
+      added ? 'success' : 'info'
+    );
+  }
+
+  clearSearch(): void {
+    this.searchControl.setValue('');
   }
 }

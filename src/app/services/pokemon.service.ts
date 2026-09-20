@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface PokemonListItem {
   name: string;
@@ -16,12 +17,30 @@ export interface PokemonListResponse {
   results: PokemonListItem[];
 }
 
+interface NamedApiResource {
+  name: string;
+  url: string;
+}
+
+export interface PokemonSpecies {
+  evolution_chain: { url: string };
+}
+
+export interface EvolutionNode {
+  species: NamedApiResource;
+  evolves_to: EvolutionNode[];
+}
+
+export interface EvolutionChainResponse {
+  chain: EvolutionNode;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class PokemonService {
   private http = inject(HttpClient);
-  private readonly apiUrl = 'https://pokeapi.co/api/v2';
+  private readonly apiUrl = environment.apiUrl;
 
   /**
    * Helper to extract numeric ID from PokeAPI URL:
@@ -44,7 +63,9 @@ export class PokemonService {
    */
   getPokemons(limit: number = 20, offset: number = 0): Observable<PokemonListResponse> {
     return this.http
-      .get<any>(`${this.apiUrl}/pokemon?limit=${limit}&offset=${offset}`)
+      .get<{ count: number; next: string | null; previous: string | null; results: NamedApiResource[] }>(
+        `${this.apiUrl}/pokemon?limit=${limit}&offset=${offset}`
+      )
       .pipe(
         map((response) => ({
           count: response.count,
@@ -61,6 +82,18 @@ export class PokemonService {
           })
         }))
       );
+  }
+
+  getAllPokemons(): Observable<PokemonListItem[]> {
+    return this.getPokemons(2000).pipe(map((response) => response.results));
+  }
+
+  getPokemonSpecies(nameOrId: string | number): Observable<PokemonSpecies> {
+    return this.http.get<PokemonSpecies>(`${this.apiUrl}/pokemon-species/${nameOrId}`);
+  }
+
+  getEvolutionChain(url: string): Observable<EvolutionChainResponse> {
+    return this.http.get<EvolutionChainResponse>(url);
   }
 
   /**
